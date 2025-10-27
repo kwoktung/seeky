@@ -1,103 +1,247 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import { Search, Loader2, CheckCircle2, XCircle, Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+
+interface DomainResult {
+  domain: string;
+  available: boolean | null;
+  checking: boolean;
+  error?: string;
+}
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [description, setDescription] = useState("");
+  const [limit, setLimit] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<DomainResult[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleSearch = async () => {
+    if (!description.trim()) return;
+
+    setLoading(true);
+    setResults([]);
+
+    try {
+      // Step 1: Get AI-generated domain suggestions
+      const suggestResponse = await fetch(
+        `/api/services/domain-suggest?description=${encodeURIComponent(description)}&limit=${limit}`,
+      );
+      const suggestData = (await suggestResponse.json()) as {
+        success: boolean;
+        error?: string;
+        data?: { suggestions: { domain: string }[] };
+      };
+
+      if (!suggestData.success) {
+        throw new Error(suggestData.error || "Failed to generate suggestions");
+      }
+
+      const suggestions = suggestData.data?.suggestions || [];
+
+      // Initialize results with checking state
+      const initialResults: DomainResult[] = suggestions.map(
+        (s: { domain: string }) => ({
+          domain: s.domain,
+          available: null,
+          checking: true,
+        }),
+      );
+      setResults(initialResults);
+      setLoading(false);
+
+      // Step 2: Check each domain availability via WHOIS
+      for (let i = 0; i < suggestions.length; i++) {
+        const domain = suggestions[i].domain;
+
+        try {
+          const whoisResponse = await fetch(
+            `/api/services/whois?domain=${encodeURIComponent(domain)}`,
+          );
+          const whoisData = (await whoisResponse.json()) as {
+            success: boolean;
+            error?: string;
+          };
+
+          // Update the specific domain result
+          setResults((prev) =>
+            prev.map((result, idx) =>
+              idx === i
+                ? {
+                    ...result,
+                    checking: false,
+                    available:
+                      whoisResponse.status === 404 || !whoisData.success,
+                  }
+                : result,
+            ),
+          );
+        } catch (error) {
+          // If WHOIS check fails, mark as error
+          console.error(`Failed to check domain ${domain}:`, error);
+          setResults((prev) =>
+            prev.map((result, idx) =>
+              idx === i
+                ? {
+                    ...result,
+                    checking: false,
+                    available: null,
+                    error: "Failed to check",
+                  }
+                : result,
+            ),
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Search failed:", error);
+      setLoading(false);
+      alert(
+        error instanceof Error ? error.message : "Failed to search domains",
+      );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-4 sm:p-8">
+      <div className="max-w-4xl mx-auto space-y-8">
+        {/* Header */}
+        <div className="text-center space-y-4 pt-8">
+          <div className="flex items-center justify-center gap-3">
+            <Globe className="w-12 h-12 text-indigo-600 dark:text-indigo-400" />
+            <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white">
+              Domain Finder
+            </h1>
+          </div>
+          <p className="text-lg text-gray-600 dark:text-gray-300">
+            AI-powered domain name suggestions with instant availability checks
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Search Form */}
+        <Card className="shadow-xl">
+          <CardHeader>
+            <CardTitle>Find Your Perfect Domain</CardTitle>
+            <CardDescription>
+              Describe your project or business idea, and we&apos;ll suggest
+              available domain names
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="description">What&apos;s your idea?</Label>
+              <Textarea
+                id="description"
+                placeholder="e.g., a social network for developers, an AI-powered fitness app..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={loading}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="limit">Number of suggestions (1-20)</Label>
+              <Input
+                id="limit"
+                type="number"
+                min="1"
+                max="20"
+                value={limit}
+                onChange={(e) => setLimit(parseInt(e.target.value) || 10)}
+                disabled={loading}
+              />
+            </div>
+            <Button
+              onClick={handleSearch}
+              disabled={loading || !description.trim()}
+              className="w-full"
+              size="lg"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating Suggestions...
+                </>
+              ) : (
+                <>
+                  <Search className="w-4 h-4 mr-2" />
+                  Find Domains
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        {results.length > 0 && (
+          <Card className="shadow-xl">
+            <CardHeader>
+              <CardTitle>Domain Suggestions</CardTitle>
+              <CardDescription>
+                {results.filter((r) => r.available === true).length} available •{" "}
+                {results.filter((r) => r.available === false).length} taken •{" "}
+                {results.filter((r) => r.checking).length} checking
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {results.map((result, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {result.checking ? (
+                        <Loader2 className="w-5 h-5 text-gray-400 animate-spin flex-shrink-0" />
+                      ) : result.available === true ? (
+                        <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                      ) : result.available === false ? (
+                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                      )}
+                      <span className="font-mono font-medium text-sm sm:text-base break-all">
+                        {result.domain}
+                      </span>
+                    </div>
+                    <div className="ml-2">
+                      {result.checking ? (
+                        <Badge variant="secondary">Checking...</Badge>
+                      ) : result.available === true ? (
+                        <Badge className="bg-green-600 hover:bg-green-700">
+                          Available
+                        </Badge>
+                      ) : result.available === false ? (
+                        <Badge variant="destructive">Taken</Badge>
+                      ) : (
+                        <Badge variant="outline">Error</Badge>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Footer */}
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400 pb-8">
+          <p>Powered by Cloudflare AI & WHOIS</p>
+        </div>
+      </div>
     </div>
   );
 }

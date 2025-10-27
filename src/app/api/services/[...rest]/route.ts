@@ -1,15 +1,15 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { Scalar } from "@scalar/hono-api-reference";
 
-import bookApp from "./book";
 import whoisApp from "./whois";
+import domainSuggestApp from "./domain-suggest";
 
 const basePath = "/api/services";
 
 const app = new OpenAPIHono().basePath(basePath);
 
-app.route("/book", bookApp);
 app.route("/whois", whoisApp);
+app.route("/domain-suggest", domainSuggestApp);
 app.doc31("/docs", {
   openapi: "3.1.0",
   info: {
