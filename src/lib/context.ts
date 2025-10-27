@@ -11,5 +11,10 @@ export type Context = {
 };
 
 export const createContext = (env: CloudflareEnv): Context => {
-  return { env, logger: getLogger(env), db: createDatabaseClient(env), kv: env.KV };
+  return {
+    env,
+    logger: getLogger(env),
+    db: createDatabaseClient(env),
+    kv: env.KV,
+  };
 };

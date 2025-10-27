@@ -19,12 +19,18 @@ const createBookSchema = z.object({
   }),
   description: z.string().optional().openapi({
     description: "The description of the book",
-    example: "A story of the fabulously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan.",
+    example:
+      "A story of the fabulously wealthy Jay Gatsby and his love for the beautiful Daisy Buchanan.",
   }),
-  publishedYear: z.number().min(1800).max(new Date().getFullYear()).optional().openapi({
-    description: "The year the book was published",
-    example: 1925,
-  }),
+  publishedYear: z
+    .number()
+    .min(1800)
+    .max(new Date().getFullYear())
+    .optional()
+    .openapi({
+      description: "The year the book was published",
+      example: 1925,
+    }),
   genre: z.string().optional().openapi({
     description: "The genre of the book",
     example: "Fiction",
@@ -354,7 +360,7 @@ const bookApp = new OpenAPIHono({
       });
     }
     return result;
-  }
+  },
 });
 
 bookApp.openapi(createBook, async (c) => {

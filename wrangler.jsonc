@@ -10,25 +10,25 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": {
     "binding": "ASSETS",
-    "directory": ".open-next/assets"
+    "directory": ".open-next/assets",
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "NextJS-Hono-Cloudflare",
       "database_id": "17ea1884-a7c1-4019-b03c-7eabedebe0fa",
-      "migrations_dir": "./src/database/migrations"
-    }
+      "migrations_dir": "./src/database/migrations",
+    },
   ],
   "kv_namespaces": [
     {
       "binding": "KV",
-      "id": "afabdd3b7ccd469c8ae146cfe6a1717a"
-    }
-  ]
+      "id": "afabdd3b7ccd469c8ae146cfe6a1717a",
+    },
+  ],
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

@@ -37,13 +37,9 @@ export class HttpResponse {
   /**
    * Create a successful response
    */
-  static success<T>(
-    ctx: Context,
-    data: T,
-    options: ResponseOptions = {}
-  ) {
+  static success<T>(ctx: Context, data: T, options: ResponseOptions = {}) {
     const { message = "Success", timestamp = true } = options;
-    
+
     const response: HttpResponseType<T> = {
       data,
       success: true,
@@ -60,10 +56,11 @@ export class HttpResponse {
   static pagination<T>(
     ctx: Context,
     data: PaginationType<T>,
-    options: ResponseOptions = {}
+    options: ResponseOptions = {},
   ) {
-    const { message = "Data retrieved successfully", timestamp = true } = options;
-    
+    const { message = "Data retrieved successfully", timestamp = true } =
+      options;
+
     const response: HttpResponseType<PaginationType<T>> = {
       data,
       success: true,
@@ -77,17 +74,14 @@ export class HttpResponse {
   /**
    * Create an error response
    */
-  static error(
-    ctx: Context,
-    options: ErrorResponseOptions = {}
-  ) {
-    const { 
-      message = "An error occurred", 
+  static error(ctx: Context, options: ErrorResponseOptions = {}) {
+    const {
+      message = "An error occurred",
       status = 500,
       errorCode,
-      details 
+      details,
     } = options;
-    
+
     const response: ErrorResponseType = {
       data: null,
       success: false,
@@ -172,7 +166,11 @@ export class HttpResponse {
   /**
    * Create a created response (for POST operations)
    */
-  static created<T>(ctx: Context, data: T, options?: Omit<ResponseOptions, 'status'>) {
+  static created<T>(
+    ctx: Context,
+    data: T,
+    options?: Omit<ResponseOptions, "status">,
+  ) {
     return this.success(ctx, data, { ...options, status: 201 });
   }
 }

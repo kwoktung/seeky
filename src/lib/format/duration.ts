@@ -1,6 +1,4 @@
-import { z } from 'zod'
-
-
+import { z } from "zod";
 
 const durationSchema = z.object({
   years: z.number().optional(),
@@ -24,7 +22,9 @@ export const validateDuration = (duration: Duration | string): Duration => {
   return result.data;
 };
 
-export const formatDurationToTimestamp = (duration: Duration | string): number => { 
+export const formatDurationToTimestamp = (
+  duration: Duration | string,
+): number => {
   const validatedDuration = validateDuration(duration);
   let total = 0;
   if (validatedDuration.years) {

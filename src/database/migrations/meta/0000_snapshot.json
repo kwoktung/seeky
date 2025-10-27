@@ -109,9 +109,7 @@
       "indexes": {
         "accounts_userId_idx": {
           "name": "accounts_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -206,37 +204,27 @@
       "indexes": {
         "books_isbn_unique": {
           "name": "books_isbn_unique",
-          "columns": [
-            "isbn"
-          ],
+          "columns": ["isbn"],
           "isUnique": true
         },
         "books_title_idx": {
           "name": "books_title_idx",
-          "columns": [
-            "title"
-          ],
+          "columns": ["title"],
           "isUnique": false
         },
         "books_author_idx": {
           "name": "books_author_idx",
-          "columns": [
-            "author"
-          ],
+          "columns": ["author"],
           "isUnique": false
         },
         "books_isbn_idx": {
           "name": "books_isbn_idx",
-          "columns": [
-            "isbn"
-          ],
+          "columns": ["isbn"],
           "isUnique": false
         },
         "books_genre_idx": {
           "name": "books_genre_idx",
-          "columns": [
-            "genre"
-          ],
+          "columns": ["genre"],
           "isUnique": false
         }
       },
@@ -280,9 +268,7 @@
       "indexes": {
         "sessions_userId_idx": {
           "name": "sessions_userId_idx",
-          "columns": [
-            "userId"
-          ],
+          "columns": ["userId"],
           "isUnique": false
         }
       },
@@ -364,9 +350,7 @@
       "indexes": {
         "verification_tokens_identifier_idx": {
           "name": "verification_tokens_identifier_idx",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": false
         }
       },

@@ -31,17 +31,16 @@ export class BookService extends BaseService {
    */
   async getBookById(id: number) {
     return this.ctx.db.query.bookTable.findFirst({
-      where: and(
-        eq(bookTable.id, id),
-        isNull(bookTable.deletedAt)
-      ),
+      where: and(eq(bookTable.id, id), isNull(bookTable.deletedAt)),
     });
   }
 
   /**
    * 创建新书籍
    */
-  async createBook(bookData: Omit<NewBook, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>) {
+  async createBook(
+    bookData: Omit<NewBook, "id" | "createdAt" | "updatedAt" | "deletedAt">,
+  ) {
     const now = new Date();
     const newBook = {
       ...bookData,
@@ -49,8 +48,11 @@ export class BookService extends BaseService {
       updatedAt: now,
     };
 
-    const result = await this.ctx.db.insert(bookTable).values(newBook).returning();
-    
+    const result = await this.ctx.db
+      .insert(bookTable)
+      .values(newBook)
+      .returning();
+
     // Get the inserted book ID and return the new book
     const bookId = result[0].id as number;
     return {
@@ -62,7 +64,10 @@ export class BookService extends BaseService {
   /**
    * 更新书籍信息
    */
-  async updateBook(id: number, bookData: Partial<Omit<NewBook, 'id' | 'createdAt' | 'deletedAt'>>) {
+  async updateBook(
+    id: number,
+    bookData: Partial<Omit<NewBook, "id" | "createdAt" | "deletedAt">>,
+  ) {
     const now = new Date();
     const updateData = {
       ...bookData,
@@ -72,10 +77,7 @@ export class BookService extends BaseService {
     const result = await this.ctx.db
       .update(bookTable)
       .set(updateData)
-      .where(and(
-        eq(bookTable.id, id),
-        isNull(bookTable.deletedAt)
-      ));
+      .where(and(eq(bookTable.id, id), isNull(bookTable.deletedAt)));
 
     return result;
   }
@@ -87,14 +89,11 @@ export class BookService extends BaseService {
     const now = new Date();
     const result = await this.ctx.db
       .update(bookTable)
-      .set({ 
+      .set({
         deletedAt: now,
-        updatedAt: now 
+        updatedAt: now,
       })
-      .where(and(
-        eq(bookTable.id, id),
-        isNull(bookTable.deletedAt)
-      ));
+      .where(and(eq(bookTable.id, id), isNull(bookTable.deletedAt)));
 
     return result;
   }
@@ -115,11 +114,11 @@ export class BookService extends BaseService {
    */
   async searchBooks(query: string, limit?: number, offset?: number) {
     const searchQuery = `%${query}%`;
-    
+
     return this.ctx.db.query.bookTable.findMany({
       where: and(
         isNull(bookTable.deletedAt),
-        like(bookTable.title, searchQuery)
+        like(bookTable.title, searchQuery),
       ),
       orderBy: [desc(bookTable.createdAt)],
       limit,
@@ -132,10 +131,7 @@ export class BookService extends BaseService {
    */
   async getBooksByGenre(genre: string, limit?: number, offset?: number) {
     return this.ctx.db.query.bookTable.findMany({
-      where: and(
-        eq(bookTable.genre, genre),
-        isNull(bookTable.deletedAt)
-      ),
+      where: and(eq(bookTable.genre, genre), isNull(bookTable.deletedAt)),
       orderBy: [desc(bookTable.createdAt)],
       limit,
       offset,
@@ -147,10 +143,7 @@ export class BookService extends BaseService {
    */
   async getBooksByAuthor(author: string, limit?: number, offset?: number) {
     return this.ctx.db.query.bookTable.findMany({
-      where: and(
-        eq(bookTable.author, author),
-        isNull(bookTable.deletedAt)
-      ),
+      where: and(eq(bookTable.author, author), isNull(bookTable.deletedAt)),
       orderBy: [desc(bookTable.createdAt)],
       limit,
       offset,
@@ -162,10 +155,7 @@ export class BookService extends BaseService {
    */
   async getBookByIsbn(isbn: string) {
     return this.ctx.db.query.bookTable.findFirst({
-      where: and(
-        eq(bookTable.isbn, isbn),
-        isNull(bookTable.deletedAt)
-      ),
+      where: and(eq(bookTable.isbn, isbn), isNull(bookTable.deletedAt)),
     });
   }
 
@@ -177,7 +167,7 @@ export class BookService extends BaseService {
       .select({ count: sql<number>`count(*)` })
       .from(bookTable)
       .where(isNull(bookTable.deletedAt));
-    
+
     return result[0]?.count || 0;
   }
 
@@ -192,9 +182,11 @@ export class BookService extends BaseService {
   /**
    * 批量创建书籍
    */
-  async createBooks(booksData: Omit<NewBook, 'id' | 'createdAt' | 'updatedAt' | 'deletedAt'>[]) {
+  async createBooks(
+    booksData: Omit<NewBook, "id" | "createdAt" | "updatedAt" | "deletedAt">[],
+  ) {
     const now = new Date();
-    const books = booksData.map(book => ({
+    const books = booksData.map((book) => ({
       ...book,
       createdAt: now,
       updatedAt: now,
@@ -211,9 +203,9 @@ export class BookService extends BaseService {
     const now = new Date();
     const result = await this.ctx.db
       .update(bookTable)
-      .set({ 
+      .set({
         deletedAt: null,
-        updatedAt: now 
+        updatedAt: now,
       })
       .where(eq(bookTable.id, id));
 

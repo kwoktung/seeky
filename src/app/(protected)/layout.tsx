@@ -1,5 +1,5 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
-import { getNextAuth } from '@/lib/auth'
+import { getNextAuth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({
