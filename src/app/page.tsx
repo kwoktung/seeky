@@ -27,18 +27,36 @@ export default function Home() {
   const [limit, setLimit] = useState(10);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<DomainResult[]>([]);
+  const [excludedDomains, setExcludedDomains] = useState<string[]>([]);
+
+  // Reset excluded domains and results when description changes
+  const handleDescriptionChange = (value: string) => {
+    setDescription(value);
+    if (value !== description) {
+      setExcludedDomains([]);
+      setResults([]);
+    }
+  };
 
   const handleSearch = async () => {
     if (!description.trim()) return;
 
     setLoading(true);
-    setResults([]);
 
     try {
       // Step 1: Get AI-generated domain suggestions
-      const suggestResponse = await fetch(
-        `/api/services/domain-suggest?description=${encodeURIComponent(description)}&limit=${limit}`,
-      );
+      const suggestResponse = await fetch("/api/domain-suggest", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          description: description.trim(),
+          limit,
+          exclude: excludedDomains,
+        }),
+      });
+
       const suggestData = (await suggestResponse.json()) as {
         success: boolean;
         error?: string;
@@ -59,52 +77,58 @@ export default function Home() {
           checking: true,
         }),
       );
-      setResults(initialResults);
+      setResults((prev) => [...prev, ...initialResults]);
+
+      // Add new domains to excluded list
+      const newDomains = suggestions.map((s: { domain: string }) => s.domain);
+      setExcludedDomains((prev) => [...prev, ...newDomains]);
+
       setLoading(false);
 
-      // Step 2: Check each domain availability via WHOIS
-      for (let i = 0; i < suggestions.length; i++) {
-        const domain = suggestions[i].domain;
+      // Step 2: Batch check domain availability via WHOIS
+      const domains = suggestions.map((s: { domain: string }) => s.domain);
 
-        try {
-          const whoisResponse = await fetch(
-            `/api/services/whois?domain=${encodeURIComponent(domain)}`,
-          );
-          const whoisData = (await whoisResponse.json()) as {
-            success: boolean;
-            error?: string;
-          };
+      const bulkResponse = await fetch("/api/domain-lookup/bulk", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          domains,
+        }),
+      });
 
-          // Update the specific domain result
-          setResults((prev) =>
-            prev.map((result, idx) =>
-              idx === i
-                ? {
-                    ...result,
-                    checking: false,
-                    available:
-                      whoisResponse.status === 404 || !whoisData.success,
-                  }
-                : result,
-            ),
-          );
-        } catch (error) {
-          // If WHOIS check fails, mark as error
-          console.error(`Failed to check domain ${domain}:`, error);
-          setResults((prev) =>
-            prev.map((result, idx) =>
-              idx === i
-                ? {
-                    ...result,
-                    checking: false,
-                    available: null,
-                    error: "Failed to check",
-                  }
-                : result,
-            ),
-          );
-        }
+      const bulkData = (await bulkResponse.json()) as {
+        success: boolean;
+        results?: Array<{
+          domain: string;
+          success: boolean;
+          data?: unknown;
+          error?: string;
+        }>;
+      };
+
+      if (!bulkData.success || !bulkData.results) {
+        throw new Error("Failed to check domain availability");
       }
+
+      // Update results with availability information
+      setResults((prev) =>
+        prev.map((result) => {
+          const whoisResult = bulkData.results?.find(
+            (r) => r.domain === result.domain,
+          );
+          if (whoisResult) {
+            return {
+              ...result,
+              checking: false,
+              available: !whoisResult.success, // If WHOIS returns data, domain is taken
+              error: whoisResult.error,
+            };
+          }
+          return result;
+        }),
+      );
     } catch (error) {
       console.error("Search failed:", error);
       setLoading(false);
@@ -146,7 +170,7 @@ export default function Home() {
                 id="description"
                 placeholder="e.g., a social network for developers, an AI-powered fitness app..."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => handleDescriptionChange(e.target.value)}
                 disabled={loading}
                 rows={4}
                 className="resize-none"
@@ -233,13 +257,33 @@ export default function Home() {
                   </div>
                 ))}
               </div>
+              <div className="mt-4 pt-4 border-t">
+                <Button
+                  onClick={handleSearch}
+                  disabled={loading || !description.trim()}
+                  className="w-full"
+                  variant="outline"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Loading More...
+                    </>
+                  ) : (
+                    <>
+                      <Search className="w-4 h-4 mr-2" />
+                      Load More Suggestions
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         )}
 
         {/* Footer */}
         <div className="text-center text-sm text-gray-600 dark:text-gray-400 pb-8">
-          <p>Powered by Cloudflare AI & WHOIS</p>
+          <p>Powered by Anthropic AI & WHOIS</p>
         </div>
       </div>
     </div>
