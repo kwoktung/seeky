@@ -57,11 +57,17 @@ const domainLookupDataSchema = z.object({
     description: "Registrar abuse contact phone",
     example: "+1.8777228662",
   }),
-  domainStatus: z.string().optional().openapi({
-    description: "Domain status code",
-    example:
-      "clientTransferProhibited https://icann.org/epp#clientTransferProhibited",
-  }),
+  domainStatus: z
+    .array(z.string())
+    .optional()
+    .openapi({
+      description: "Domain status codes",
+      example: [
+        "clientTransferProhibited",
+        "clientUpdateProhibited",
+        "clientDeleteProhibited",
+      ],
+    }),
   nameServers: z
     .array(z.string())
     .optional()

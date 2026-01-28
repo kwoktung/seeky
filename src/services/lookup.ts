@@ -1,24 +1,9 @@
 import { BaseService } from "./service";
 import { Socket } from "net";
 import whoisServers from "whois-servers-list";
+import { WhoisData, parseWhoisData } from "./whois-parser";
 
-export interface WhoisData {
-  domainName?: string;
-  registryDomainId?: string;
-  registrarWhoisServer?: string;
-  registrarUrl?: string;
-  updatedDate?: string;
-  creationDate?: string;
-  registryExpiryDate?: string;
-  registrar?: string;
-  registrarIanaId?: string;
-  registrarAbuseContactEmail?: string;
-  registrarAbuseContactPhone?: string;
-  domainStatus?: string;
-  nameServers?: string[];
-  dnssec?: string;
-  rawData?: string;
-}
+export type { WhoisData };
 
 export class LookupService extends BaseService {
   private readonly WHOIS_PORT = 43;
@@ -43,7 +28,7 @@ export class LookupService extends BaseService {
       return null;
     }
 
-    return this.parseWhoisData(rawData);
+    return parseWhoisData(rawData);
   }
 
   /**
@@ -170,87 +155,6 @@ export class LookupService extends BaseService {
   private async fetchWhoisData(domain: string): Promise<string> {
     const whoisServer = await this.getWhoisServer(domain);
     return this.queryWhoisRaw(whoisServer, domain);
-  }
-
-  /**
-   * Parse raw WHOIS data into structured format
-   */
-  private parseWhoisData(rawData: string): WhoisData {
-    const lines = rawData.split("\n");
-    const result: WhoisData = {
-      nameServers: [],
-      rawData,
-    };
-
-    for (const line of lines) {
-      const trimmedLine = line.trim();
-
-      if (
-        !trimmedLine ||
-        trimmedLine.startsWith(">>>") ||
-        trimmedLine.startsWith("NOTICE:") ||
-        trimmedLine.startsWith("TERMS OF USE:")
-      ) {
-        continue;
-      }
-
-      const colonIndex = trimmedLine.indexOf(":");
-      if (colonIndex === -1) continue;
-
-      const key = trimmedLine.substring(0, colonIndex).trim();
-      const value = trimmedLine.substring(colonIndex + 1).trim();
-
-      if (!value) continue;
-
-      switch (key) {
-        case "Domain Name":
-          result.domainName = value;
-          break;
-        case "Registry Domain ID":
-          result.registryDomainId = value;
-          break;
-        case "Registrar WHOIS Server":
-          result.registrarWhoisServer = value;
-          break;
-        case "Registrar URL":
-          result.registrarUrl = value;
-          break;
-        case "Updated Date":
-          result.updatedDate = value;
-          break;
-        case "Creation Date":
-          result.creationDate = value;
-          break;
-        case "Registry Expiry Date":
-          result.registryExpiryDate = value;
-          break;
-        case "Registrar":
-          result.registrar = value;
-          break;
-        case "Registrar IANA ID":
-          result.registrarIanaId = value;
-          break;
-        case "Registrar Abuse Contact Email":
-          result.registrarAbuseContactEmail = value;
-          break;
-        case "Registrar Abuse Contact Phone":
-          result.registrarAbuseContactPhone = value;
-          break;
-        case "Domain Status":
-          result.domainStatus = value;
-          break;
-        case "Name Server":
-          if (result.nameServers) {
-            result.nameServers.push(value);
-          }
-          break;
-        case "DNSSEC":
-          result.dnssec = value;
-          break;
-      }
-    }
-
-    return result;
   }
 
 }
