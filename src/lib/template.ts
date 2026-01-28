@@ -8,7 +8,7 @@
  */
 export function fillTemplate(
   template: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
 ): string {
   let result = template;
 

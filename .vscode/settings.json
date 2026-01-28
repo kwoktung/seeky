@@ -2,5 +2,8 @@
   "files.associations": {
     "wrangler.json": "jsonc"
   },
-  "cSpell.words": ["Whois"]
+  "cSpell.words": [
+    "seeky",
+    "Whois"
+  ]
 }

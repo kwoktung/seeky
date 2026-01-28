@@ -21,26 +21,10 @@ export interface WhoisData {
  * Maps various field names to their normalized keys
  */
 const FIELD_MAPPINGS: Record<string, string[]> = {
-  domainName: [
-    "domain name",
-    "domain",
-    "domain:",
-    "domain name:",
-  ],
-  registryDomainId: [
-    "registry domain id",
-    "domain id",
-  ],
-  registrarWhoisServer: [
-    "registrar whois server",
-    "whois server",
-    "whois",
-  ],
-  registrarUrl: [
-    "registrar url",
-    "registrar web",
-    "url",
-  ],
+  domainName: ["domain name", "domain", "domain:", "domain name:"],
+  registryDomainId: ["registry domain id", "domain id"],
+  registrarWhoisServer: ["registrar whois server", "whois server", "whois"],
+  registrarUrl: ["registrar url", "registrar web", "url"],
   updatedDate: [
     "updated date",
     "last updated",
@@ -63,14 +47,8 @@ const FIELD_MAPPINGS: Record<string, string[]> = {
     "expires on",
     "paid-till",
   ],
-  registrar: [
-    "registrar",
-    "sponsoring registrar",
-  ],
-  registrarIanaId: [
-    "registrar iana id",
-    "iana id",
-  ],
+  registrar: ["registrar", "sponsoring registrar"],
+  registrarIanaId: ["registrar iana id", "iana id"],
   registrarAbuseContactEmail: [
     "registrar abuse contact email",
     "abuse contact email",
@@ -81,28 +59,19 @@ const FIELD_MAPPINGS: Record<string, string[]> = {
     "abuse contact phone",
     "abuse phone",
   ],
-  domainStatus: [
-    "domain status",
-    "status",
-    "state",
-  ],
-  nameServer: [
-    "name server",
-    "nserver",
-    "nameserver",
-    "nameservers",
-  ],
-  dnssec: [
-    "dnssec",
-    "dnssec status",
-  ],
+  domainStatus: ["domain status", "status", "state"],
+  nameServer: ["name server", "nserver", "nameserver", "nameservers"],
+  dnssec: ["dnssec", "dnssec status"],
 };
 
 /**
  * Normalize field name by removing special characters and converting to lowercase
  */
 function normalizeFieldName(field: string): string {
-  return field.toLowerCase().trim().replace(/[\s_-]+/g, " ");
+  return field
+    .toLowerCase()
+    .trim()
+    .replace(/[\s_-]+/g, " ");
 }
 
 /**
@@ -112,7 +81,7 @@ function matchFieldKey(fieldName: string): string | null {
   const normalized = normalizeFieldName(fieldName);
 
   for (const [key, variations] of Object.entries(FIELD_MAPPINGS)) {
-    if (variations.some(v => normalizeFieldName(v) === normalized)) {
+    if (variations.some((v) => normalizeFieldName(v) === normalized)) {
       return key;
     }
   }
@@ -129,7 +98,7 @@ function matchFieldKey(fieldName: string): string | null {
  * - "key value" (space-separated)
  */
 function extractKeyValue(line: string): { key: string; value: string } | null {
-  let colonIndex = line.indexOf(":");
+  const colonIndex = line.indexOf(":");
 
   if (colonIndex !== -1) {
     // Standard "key: value" format
@@ -266,21 +235,23 @@ export function parseWhoisData(rawData: string): WhoisData {
         }
         break;
 
-      case "domainStatus":
+      case "domainStatus": {
         // Support multiple statuses
         const cleanedStatus = cleanStatusValue(value);
         if (cleanedStatus && !result.domainStatus?.includes(cleanedStatus)) {
           result.domainStatus?.push(cleanedStatus);
         }
         break;
+      }
 
-      case "nameServer":
+      case "nameServer": {
         // Support multiple name servers
         const cleanedNS = value.toLowerCase();
         if (cleanedNS && !result.nameServers?.includes(cleanedNS)) {
           result.nameServers?.push(cleanedNS);
         }
         break;
+      }
 
       case "dnssec":
         if (!result.dnssec) {

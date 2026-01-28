@@ -9,16 +9,10 @@ const domainSuggestBodySchema = z.object({
     description: "Description of the domain or business idea",
     example: "a social network for developers",
   }),
-  limit: z
-    .number()
-    .min(1)
-    .max(20)
-    .optional()
-    .default(10)
-    .openapi({
-      description: "Maximum number of domain suggestions (1-20)",
-      example: 10,
-    }),
+  limit: z.number().min(1).max(20).optional().default(10).openapi({
+    description: "Maximum number of domain suggestions (1-20)",
+    example: 10,
+  }),
   exclude: z
     .array(z.string())
     .optional()

@@ -12,7 +12,10 @@ console.log("Example 1:", result1);
 
 // Example 2: Conditional block (truthy)
 const template2 = "{{#if isLoggedIn}}Welcome back, {{username}}!{{/if}}";
-const result2 = fillTemplate(template2, { isLoggedIn: true, username: "Alice" });
+const result2 = fillTemplate(template2, {
+  isLoggedIn: true,
+  username: "Alice",
+});
 console.log("Example 2:", result2);
 // Output: "Welcome back, Alice!"
 

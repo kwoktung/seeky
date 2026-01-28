@@ -1,7 +1,7 @@
 import { BaseService } from "./service";
 import { Socket } from "net";
 import whoisServers from "whois-servers-list";
-import { WhoisData, parseWhoisData } from "./whois-parser";
+import { WhoisData, parseWhoisData } from "@/lib/whois-parser";
 
 export type { WhoisData };
 
@@ -97,10 +97,7 @@ export class LookupService extends BaseService {
   /**
    * Query raw WHOIS data from any WHOIS server
    */
-  private async queryWhoisRaw(
-    server: string,
-    query: string,
-  ): Promise<string> {
+  private async queryWhoisRaw(server: string, query: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const socket = new Socket();
       let data = "";
@@ -156,5 +153,4 @@ export class LookupService extends BaseService {
     const whoisServer = await this.getWhoisServer(domain);
     return this.queryWhoisRaw(whoisServer, domain);
   }
-
 }
