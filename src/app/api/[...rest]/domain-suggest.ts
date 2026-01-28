@@ -4,19 +4,28 @@ import { createContext } from "@/lib/context";
 import { Services } from "@/services";
 import { HttpResponse } from "@/lib/response";
 
-const domainSuggestQuerySchema = z.object({
+const domainSuggestBodySchema = z.object({
   description: z.string().min(1).openapi({
     description: "Description of the domain or business idea",
     example: "a social network for developers",
   }),
   limit: z
-    .string()
+    .number()
+    .min(1)
+    .max(20)
     .optional()
-    .transform((val) => (val ? parseInt(val, 10) : 10))
-    .pipe(z.number().min(1).max(20))
+    .default(10)
     .openapi({
       description: "Maximum number of domain suggestions (1-20)",
-      example: "10",
+      example: 10,
+    }),
+  exclude: z
+    .array(z.string())
+    .optional()
+    .default([])
+    .openapi({
+      description: "Array of domains to exclude from suggestions",
+      example: ["example.com", "test.com"],
     }),
 });
 
@@ -36,10 +45,16 @@ const domainSuggestResponseSchema = z.object({
 });
 
 const suggestDomains = createRoute({
-  method: "get",
+  method: "post",
   path: "/",
   request: {
-    query: domainSuggestQuerySchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: domainSuggestBodySchema,
+        },
+      },
+    },
   },
   responses: {
     200: {
@@ -73,15 +88,16 @@ const domainSuggestApp = new OpenAPIHono({
 
 domainSuggestApp.openapi(suggestDomains, async (c) => {
   try {
-    const { description, limit } = c.req.valid("query");
+    const { description, limit, exclude } = c.req.valid("json");
 
     const ctx = createContext(getCloudflareContext({ async: false }).env);
     const services = new Services(ctx);
 
-    // Generate domain suggestions using AI
+    // Generate domain suggestions using AI with exclude parameter
     const suggestions = await services.domainAI.generateDomainSuggestions(
       description,
       limit,
+      exclude,
     );
 
     return c.json({

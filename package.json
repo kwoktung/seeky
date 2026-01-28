@@ -17,12 +17,14 @@
     "reset": "wrangler d1 migrations reset NextJS-Hono-Cloudflare"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.28",
     "@auth/d1-adapter": "^1.10.0",
     "@hono/zod-openapi": "^1.1.0",
     "@opennextjs/cloudflare": "^1.16.0",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-slot": "^1.2.3",
     "@scalar/hono-api-reference": "^0.9.13",
+    "ai": "^6.0.57",
     "axios": "^1.13.3",
     "bignumber.js": "^9.3.1",
     "class-variance-authority": "^0.7.1",

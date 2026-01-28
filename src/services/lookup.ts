@@ -19,7 +19,7 @@ export interface WhoisData {
   rawData?: string;
 }
 
-export class WhoisService extends BaseService {
+export class LookupService extends BaseService {
   private readonly WHOIS_PORT = 43;
   private readonly TIMEOUT = 10000; // 10 seconds
 
@@ -64,7 +64,7 @@ export class WhoisService extends BaseService {
   private readonly DEFAULT_WHOIS_SERVER = "whois.iana.org";
 
   /**
-   * Query WHOIS information for a domain
+   * Query domain lookup information for a domain
    */
   async queryDomain(domain: string): Promise<WhoisData | null> {
     const rawData = await this.fetchWhoisData(domain);

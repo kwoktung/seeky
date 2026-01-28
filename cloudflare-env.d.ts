@@ -5,8 +5,9 @@ declare namespace Cloudflare {
   interface Env {
     KV: KVNamespace;
     DB: D1Database;
-    AI: Ai;
     ASSETS: Fetcher;
+    ANTHROPIC_API_KEY: string;
+    ANTHROPIC_BASE_URL?: string;
   }
 }
 interface CloudflareEnv extends Cloudflare.Env {}
