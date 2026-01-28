@@ -1,56 +1,81 @@
-import { fillTemplate } from "./template";
+import { describe, it, expect } from "vitest";
+import { interpolate } from "./template";
 
-/**
- * Example usage and tests for the enhanced template interpolation
- */
+describe("interpolate", () => {
+  describe("variable interpolation", () => {
+    it("should interpolate simple variables", () => {
+      const template = "Hello {{name}}, you are {{age}} years old.";
+      const result = interpolate(template, { name: "John", age: 25 });
+      expect(result).toBe("Hello John, you are 25 years old.");
+    });
 
-// Example 1: Simple variable interpolation
-const template1 = "Hello {{name}}, you are {{age}} years old.";
-const result1 = fillTemplate(template1, { name: "John", age: 25 });
-console.log("Example 1:", result1);
-// Output: "Hello John, you are 25 years old."
+    it("should leave unmatched variables as-is", () => {
+      const template = "Hello {{name}}, {{missing}}";
+      const result = interpolate(template, { name: "John" });
+      expect(result).toBe("Hello John, {{missing}}");
+    });
+  });
 
-// Example 2: Conditional block (truthy)
-const template2 = "{{#if isLoggedIn}}Welcome back, {{username}}!{{/if}}";
-const result2 = fillTemplate(template2, { isLoggedIn: true, username: "Alice" });
-console.log("Example 2:", result2);
-// Output: "Welcome back, Alice!"
+  describe("conditional blocks", () => {
+    it("should render block when condition is truthy", () => {
+      const template = "{{#if isLoggedIn}}Welcome back, {{username}}!{{/if}}";
+      const result = interpolate(template, {
+        isLoggedIn: true,
+        username: "Alice",
+      });
+      expect(result).toBe("Welcome back, Alice!");
+    });
 
-// Example 3: Conditional block (falsy)
-const template3 = "{{#if isLoggedIn}}Welcome back!{{/if}}";
-const result3 = fillTemplate(template3, { isLoggedIn: false });
-console.log("Example 3:", result3);
-// Output: ""
+    it("should not render block when condition is falsy", () => {
+      const template = "{{#if isLoggedIn}}Welcome back!{{/if}}";
+      const result = interpolate(template, { isLoggedIn: false });
+      expect(result).toBe("");
+    });
 
-// Example 4: Conditional with else
-const template4 = `{{#if hasItems}}You have items in your cart.{{else}}Your cart is empty.{{/if}}`;
-const result4a = fillTemplate(template4, { hasItems: true });
-const result4b = fillTemplate(template4, { hasItems: false });
-console.log("Example 4a:", result4a);
-// Output: "You have items in your cart."
-console.log("Example 4b:", result4b);
-// Output: "Your cart is empty."
+    it("should handle conditional with else block (truthy)", () => {
+      const template = `{{#if hasItems}}You have items in your cart.{{else}}Your cart is empty.{{/if}}`;
+      const result = interpolate(template, { hasItems: true });
+      expect(result).toBe("You have items in your cart.");
+    });
 
-// Example 5: Negation
-const template5 = "{{#if !isHidden}}This content is visible{{/if}}";
-const result5a = fillTemplate(template5, { isHidden: false });
-const result5b = fillTemplate(template5, { isHidden: true });
-console.log("Example 5a:", result5a);
-// Output: "This content is visible"
-console.log("Example 5b:", result5b);
-// Output: ""
+    it("should handle conditional with else block (falsy)", () => {
+      const template = `{{#if hasItems}}You have items in your cart.{{else}}Your cart is empty.{{/if}}`;
+      const result = interpolate(template, { hasItems: false });
+      expect(result).toBe("Your cart is empty.");
+    });
+  });
 
-// Example 6: Array truthiness
-const template6 = `{{#if items}}You have {{count}} items{{else}}No items found{{/if}}`;
-const result6a = fillTemplate(template6, { items: ["a", "b"], count: 2 });
-const result6b = fillTemplate(template6, { items: [], count: 0 });
-console.log("Example 6a:", result6a);
-// Output: "You have 2 items"
-console.log("Example 6b:", result6b);
-// Output: "No items found"
+  describe("negation", () => {
+    it("should handle negation when value is falsy", () => {
+      const template = "{{#if !isHidden}}This content is visible{{/if}}";
+      const result = interpolate(template, { isHidden: false });
+      expect(result).toBe("This content is visible");
+    });
 
-// Example 7: Complex template with multiple conditions
-const template7 = `
+    it("should handle negation when value is truthy", () => {
+      const template = "{{#if !isHidden}}This content is visible{{/if}}";
+      const result = interpolate(template, { isHidden: true });
+      expect(result).toBe("");
+    });
+  });
+
+  describe("array truthiness", () => {
+    it("should treat non-empty array as truthy", () => {
+      const template = `{{#if items}}You have {{count}} items{{else}}No items found{{/if}}`;
+      const result = interpolate(template, { items: ["a", "b"], count: 2 });
+      expect(result).toBe("You have 2 items");
+    });
+
+    it("should treat empty array as falsy", () => {
+      const template = `{{#if items}}You have {{count}} items{{else}}No items found{{/if}}`;
+      const result = interpolate(template, { items: [], count: 0 });
+      expect(result).toBe("No items found");
+    });
+  });
+
+  describe("complex templates", () => {
+    it("should handle multiple conditions in a single template", () => {
+      const template = `
 Generate {{limit}} suggestions.
 {{#if excludeDomains}}
 - Exclude: {{excludeDomains}}
@@ -61,19 +86,16 @@ Generate {{limit}} suggestions.
 - Standard domains only
 {{/if}}
 `;
-const result7 = fillTemplate(template7, {
-  limit: 10,
-  excludeDomains: "example.com, test.com",
-  includePremium: true,
-});
-console.log("Example 7:", result7);
+      const result = interpolate(template, {
+        limit: 10,
+        excludeDomains: "example.com, test.com",
+        includePremium: true,
+      });
 
-export {
-  template1,
-  template2,
-  template3,
-  template4,
-  template5,
-  template6,
-  template7,
-};
+      expect(result).toContain("Generate 10 suggestions");
+      expect(result).toContain("Exclude: example.com, test.com");
+      expect(result).toContain("Include premium domains");
+      expect(result).not.toContain("Standard domains only");
+    });
+  });
+});

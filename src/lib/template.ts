@@ -6,9 +6,9 @@
  * - Conditional blocks with else: {{#if condition}}...{{else}}...{{/if}}
  * - Negation: {{#if !condition}}...{{/if}}
  */
-export function fillTemplate(
+export function interpolate(
   template: string,
-  data: Record<string, any>,
+  data: Record<string, unknown>,
 ): string {
   let result = template;
 

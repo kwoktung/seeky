@@ -36,7 +36,7 @@ export class DomainAIService extends BaseService {
 
     const anthropic = createAnthropic({
       baseURL,
-      apiKey: 'not-needed',
+      apiKey: "not-needed",
     });
 
     const { output } = await generateText({
