@@ -3,9 +3,10 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createContext } from "@/lib/context";
 import { Services } from "@/services";
 import { HttpResponse } from "@/lib/response";
+import { domainSchema } from "@/lib/domain";
 
 const queryDomainLookupSchema = z.object({
-  domain: z.string().min(1).openapi({
+  domain: domainSchema.openapi({
     description: "The domain name to query",
     example: "idealand.com",
   }),
@@ -84,7 +85,7 @@ const domainLookupResponseSchema = z.object({
 
 const bulkDomainLookupSchema = z.object({
   domains: z
-    .array(z.string().min(1))
+    .array(domainSchema)
     .min(1)
     .max(10)
     .openapi({
@@ -186,19 +187,8 @@ domainLookupApp.openapi(domainLookupRouteDefinition, async (c) => {
     const ctx = createContext(getCloudflareContext({ async: false }).env);
     const services = new Services(ctx);
 
-    // Validate domain
-    if (!services.whois.validateDomain(domain)) {
-      return c.json(
-        {
-          success: false,
-          error: "Invalid domain format",
-        },
-        400,
-      );
-    }
-
     // Query WHOIS data
-    const whoisData = await services.whois.queryDomain(domain);
+    const whoisData = await services.lookup.queryDomain(domain);
 
     if (!whoisData) {
       return c.json(
@@ -238,17 +228,8 @@ domainLookupApp.openapi(bulkDomainLookupRouteDefinition, async (c) => {
     const results = await Promise.all(
       domains.map(async (domain) => {
         try {
-          // Validate domain
-          if (!services.whois.validateDomain(domain)) {
-            return {
-              domain,
-              success: false,
-              error: "Invalid domain format",
-            };
-          }
-
           // Query WHOIS data
-          const whoisData = await services.whois.queryDomain(domain);
+          const whoisData = await services.lookup.queryDomain(domain);
 
           if (!whoisData) {
             return {

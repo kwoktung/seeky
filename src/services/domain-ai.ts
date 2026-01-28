@@ -1,5 +1,5 @@
 import { BaseService } from "./service";
-import { domainSchema } from "@/lib/domain-validation";
+import { domainSchema } from "@/lib/domain";
 import { buildDomainSuggestionPrompt } from "@/lib/prompts/domain-suggestions";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { generateText, Output } from "ai";

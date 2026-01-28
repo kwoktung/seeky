@@ -7,7 +7,7 @@ import { DomainAIService } from "./domain-ai";
 
 export class Services {
   constructor(private readonly ctx: Context) {}
-  get whois() {
+  get lookup() {
     return new LookupService(this.ctx);
   }
   get domainAI() {
