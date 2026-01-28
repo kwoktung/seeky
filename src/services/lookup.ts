@@ -1,5 +1,6 @@
 import { BaseService } from "./service";
 import { Socket } from "net";
+import whoisServers from "whois-servers-list";
 
 export interface WhoisData {
   domainName?: string;
@@ -23,42 +24,10 @@ export class LookupService extends BaseService {
   private readonly WHOIS_PORT = 43;
   private readonly TIMEOUT = 10000; // 10 seconds
 
-  // Mapping of TLDs to their respective WHOIS servers
-  private readonly TLD_WHOIS_SERVERS: Record<string, string> = {
-    // Generic TLDs
-    com: "whois.verisign-grs.com",
-    net: "whois.verisign-grs.com",
-    edu: "whois.verisign-grs.com",
-    org: "whois.publicinterestregistry.org",
-    info: "whois.afilias.net",
-    biz: "whois.biz",
-
-    // Country code TLDs
-    uk: "whois.nic.uk",
-    ca: "whois.cira.ca",
-    au: "whois.auda.org.au",
-    nz: "whois.srs.net.nz",
-    in: "whois.registry.in",
-    de: "whois.denic.de",
-    fr: "whois.nic.fr",
-    eu: "whois.eu",
-
-    // New TLDs
-    ai: "whois.nic.ai",
-    io: "whois.nic.io",
-    xyz: "whois.nic.xyz",
-    co: "whois.registry.co",
-    me: "whois.nic.me",
-    tv: "whois.nic.tv",
-    cc: "whois.nic.cc",
-    ws: "whois.website.ws",
-    be: "whois.dns.be",
-    it: "whois.nic.it",
-    nl: "whois.domain-registry.nl",
-    us: "whois.nic.us",
-    mobi: "whois.dotmobiregistry.net",
-    asia: "whois.nic.asia",
-  };
+  // Runtime cache for dynamically discovered WHOIS servers
+  // Note: In Cloudflare Workers, this cache only persists within a single request
+  // Useful for bulk lookups to avoid redundant IANA queries for the same TLD
+  private serverCache = new Map<string, string>();
 
   // Default WHOIS server for unknown TLDs
   private readonly DEFAULT_WHOIS_SERVER = "whois.iana.org";
@@ -89,46 +58,72 @@ export class LookupService extends BaseService {
   }
 
   /**
-   * Get the appropriate WHOIS server for a given domain
+   * Get the appropriate WHOIS server for a given domain using hybrid approach
+   * 1. Check static mapping from whois-servers-list (~1,400 TLDs)
+   * 2. Check request-scoped cache for previously discovered servers
+   * 3. Query IANA for dynamic discovery
+   * 4. Fallback to IANA as default
    */
-  private getWhoisServer(domain: string): string {
+  private async getWhoisServer(domain: string): Promise<string> {
     const tld = this.extractTLD(domain);
-    const whoisServer = this.TLD_WHOIS_SERVERS[tld];
-    if (!whoisServer) {
-      throw new Error("Not supported TLD");
+
+    // 1. Try static mapping first (instant lookup - covers ~1,400 TLDs)
+    const staticServer = whoisServers[tld as keyof typeof whoisServers];
+    if (staticServer) {
+      return staticServer;
     }
-    return whoisServer;
+
+    // 2. Check request-scoped cache (useful for bulk lookups with same TLD)
+    const cached = this.serverCache.get(tld);
+    if (cached) {
+      return cached;
+    }
+
+    // 3. Dynamic discovery via IANA
+    try {
+      const server = await this.discoverWhoisServer(tld);
+      this.serverCache.set(tld, server);
+      return server;
+    } catch (error) {
+      console.error(`Failed to discover WHOIS server for TLD: ${tld}`, error);
+      // 4. Final fallback to IANA
+      return this.DEFAULT_WHOIS_SERVER;
+    }
   }
 
   /**
-   * Check if the WHOIS data indicates domain not found
+   * Discover WHOIS server for a TLD by querying IANA
    */
-  private isDomainNotFound(rawData: string): boolean {
-    const notFoundPatterns = [
-      /No match for/i,
-      /NOT FOUND/i,
-      /No Data Found/i,
-      /No entries found/i,
-      /Domain not found/i,
-    ];
+  private async discoverWhoisServer(tld: string): Promise<string> {
+    const ianaResponse = await this.queryWhoisRaw(
+      this.DEFAULT_WHOIS_SERVER,
+      tld,
+    );
 
-    return notFoundPatterns.some((pattern) => pattern.test(rawData));
+    // Parse the "whois:" or "refer:" field from IANA response
+    const referMatch = ianaResponse.match(/(?:whois|refer):\s*(.+)/i);
+    if (!referMatch) {
+      throw new Error(`No WHOIS server found in IANA response for TLD: ${tld}`);
+    }
+
+    return referMatch[1].trim();
   }
 
   /**
-   * Fetch raw WHOIS data from the WHOIS server
+   * Query raw WHOIS data from any WHOIS server
    */
-  private async fetchWhoisData(domain: string): Promise<string> {
+  private async queryWhoisRaw(
+    server: string,
+    query: string,
+  ): Promise<string> {
     return new Promise((resolve, reject) => {
       const socket = new Socket();
       let data = "";
-      const whoisServer = this.getWhoisServer(domain);
 
-      // Set timeout
       socket.setTimeout(this.TIMEOUT);
 
       socket.on("connect", () => {
-        socket.write(`${domain}\r\n`);
+        socket.write(`${query}\r\n`);
       });
 
       socket.on("data", (chunk) => {
@@ -150,8 +145,31 @@ export class LookupService extends BaseService {
         reject(err);
       });
 
-      socket.connect(this.WHOIS_PORT, whoisServer);
+      socket.connect(this.WHOIS_PORT, server);
     });
+  }
+
+  /**
+   * Check if the WHOIS data indicates domain not found
+   */
+  private isDomainNotFound(rawData: string): boolean {
+    const notFoundPatterns = [
+      /No match for/i,
+      /NOT FOUND/i,
+      /No Data Found/i,
+      /No entries found/i,
+      /Domain not found/i,
+    ];
+
+    return notFoundPatterns.some((pattern) => pattern.test(rawData));
+  }
+
+  /**
+   * Fetch raw WHOIS data from the WHOIS server
+   */
+  private async fetchWhoisData(domain: string): Promise<string> {
+    const whoisServer = await this.getWhoisServer(domain);
+    return this.queryWhoisRaw(whoisServer, domain);
   }
 
   /**

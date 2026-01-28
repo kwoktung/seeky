@@ -38,6 +38,7 @@
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "tailwind-merge": "^3.3.1",
+    "whois-servers-list": "^2025.12.2",
     "zod": "^4.0.17"
   },
   "devDependencies": {
