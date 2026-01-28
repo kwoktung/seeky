@@ -1,5 +1,8 @@
 // Template utilities
-export { fillTemplate } from "./template";
+export { interpolate } from "./template";
 
 // Domain validation utilities
 export { domainSchema, isValidDomainFormat } from "./domain";
+
+// WHOIS utilities
+export { executeWhoisQuery } from "./whois-query";

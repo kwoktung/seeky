@@ -1,10 +1,9 @@
-import { fillTemplate } from "@/lib/template";
+import { interpolate } from "@/lib/template";
 
 /**
- * Get the domain suggestion prompt template
+ * Domain suggestion prompt template
  */
-export function getDomainSuggestionPromptTemplate(): string {
-  return `Generate {{limit}} creative and available domain name suggestions based on this description: "{{description}}".
+const DOMAIN_SUGGESTION_PROMPT_TEMPLATE = `Generate {{limit}} creative and available domain name suggestions based on this description: "{{description}}".
 
 Requirements:
 - Each domain should be short (preferably under 15 characters)
@@ -18,7 +17,7 @@ Example format:
 example.com
 example.io
 example-ai.com`;
-}
+
 /**
  * Build the complete domain suggestion prompt
  */
@@ -27,10 +26,9 @@ export function buildDomainSuggestionPrompt(
   limit: number,
   exclude: string[],
 ): string {
-  const template = getDomainSuggestionPromptTemplate();
   const excludeDomains = exclude.length > 0 ? `${exclude.join(", ")}` : "";
 
-  return fillTemplate(template, {
+  return interpolate(DOMAIN_SUGGESTION_PROMPT_TEMPLATE, {
     limit,
     description,
     excludeDomains,
